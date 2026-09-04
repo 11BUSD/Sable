@@ -1,120 +1,126 @@
 # VEIL
 
-**Metadata-private transport for Ethereum.**
+**Private access to Ethereum, in one SDK.**
 
-VEIL is an open-source prototype that explores how wallets and agents can interact with Ethereum while revealing less unnecessary metadata to the infrastructure carrying their requests.
+VEIL is an open-source privacy testnet for Ethereum. It is being built around three simple developer actions:
 
-> Status: public testnet prototype. Not audited. Not production anonymity software. Do not use for high-value transactions.
-
-## Why this exists
-
-An Ethereum request can disclose more than consensus needs: source network identity, app session, request timing, RPC query history, operator workflow and relationships between actions. VEIL treats that surrounding metadata as something to minimize by default.
-
-## MVP in one minute
-
-1. Open `/playground`.
-2. Choose `eth_chainId`, `eth_blockNumber`, or `eth_getBalance`.
-3. Click **Route through VEIL**.
-4. Inspect three simulated policy-enforcing relay hops.
-5. Export a deterministic privacy receipt.
-
-The demo is deliberately limited to safe, read-only RPC calls. If `ETHEREUM_RPC_URL` is configured, the final hop calls that endpoint. Otherwise it returns a deterministic synthetic demo response.
-
-## Architecture
-
-```text
-wallet / agent
-    |
-    | local intent
-    v
-VEIL client
-    |
-    | minimized request envelope
-    v
-relay A -> relay B -> relay C -> Ethereum RPC
-    |
-    `-> privacy receipt
+```ts
+await veil.read(...)
+await veil.write(...)
+await veil.prove(...)
 ```
 
-The production architecture reserves an **anonymous-set authorization provider** for reviewed ring-signature constructions. The public MVP does not ship a home-grown cryptographic implementation and does not claim that a three-hop web demo defeats global traffic analysis.
+- `read()` — reduce metadata leaked while reading Ethereum.
+- `write()` — reduce metadata leaked while originating Ethereum actions.
+- `prove()` — prove a fact without revealing unnecessary underlying information.
 
-## Stack
+> **Testnet software. Not audited. Do not use for production funds or assume anonymity.**
 
-- Next.js 15 / React 19 / TypeScript
-- Node `crypto` for deterministic SHA-256 commitments
-- Vercel-ready deployment
-- zero account requirement for testers
-- no analytics by default
-- GitHub Actions build gate
-
-## Run locally
+## Try it
 
 ```bash
-cp .env.example .env.local
+git clone https://github.com/11BUSD/Sable.git
+cd Sable
 npm install
 npm run dev
 ```
 
-Open `http://localhost:3000`.
+Then open `http://localhost:3000/playground` and press **Route through VEIL**.
 
-Optional live Sepolia-compatible RPC:
+No account. No wallet required. No real funds.
 
-```bash
-ETHEREUM_RPC_URL=https://your-rpc.example npm run dev
-```
-
-## Test
-
-Terminal 1:
-
-```bash
-npm run dev
-```
-
-Terminal 2:
-
-```bash
-npm run smoke
-```
-
-## Vercel
-
-Import the repository into Vercel or run a Vercel deployment from the project root. `ETHEREUM_RPC_URL` is optional. The application works in synthetic tester mode without it.
-
-## Public tester script
-
-Ask testers to complete these tasks without explanation:
-
-1. Tell us what VEIL protects in one sentence.
-2. Run one request in the playground.
-3. Explain what each relay is supposed to forget.
-4. Export the receipt.
-5. Report any sentence that feels like an anonymity guarantee.
-
-Success target: 80% of first-time testers complete the flow in under 90 seconds.
-
-## Software factory
-
-`agents/privacy-auditor.md` reviews metadata collection and product claims. `agents/release-gate.md` defines release criteria. CI builds every push and PR. `scripts/smoke-test.mjs` verifies the health + relay path.
-
-Recommended iteration loop:
+## What happens?
 
 ```text
-issue -> implementation -> privacy auditor -> CI -> preview deployment -> human tester -> release gate -> production
+You
+ ↓
+VEIL client
+ ↓
+Relay A
+ ↓
+Relay B
+ ↓
+Relay C
+ ↓
+Ethereum RPC
+ ↓
+Privacy receipt
 ```
 
-## Security boundaries
+The current testnet demonstrates the interface and metadata-minimization policy. The relay path is still a prototype; it is **not** a claim of production anonymity or protection against a global network observer.
 
-This repository is a prototype and educational public-good implementation. It does not currently provide a production ring signature, onion routing, Sybil resistance, cover traffic, mixnet-level timing protection, or protection against a global passive adversary. Those belong on the audited roadmap, not in marketing claims.
+## Build on VEIL
 
-## Roadmap
+The goal is that an application should eventually need only:
 
-- v0.1 — public metadata-minimization playground + receipt
-- v0.2 — independent relay processes and encrypted hop envelopes
-- v0.3 — reviewed anonymous-set authorization provider
-- v0.4 — wallet/agent SDK and benchmark harness
-- v0.5 — independent operator testnet and external security review
+```bash
+npm install @veil/sdk
+```
+
+and:
+
+```ts
+import { veil } from "@veil/sdk";
+
+const result = await veil.read({
+  method: "eth_blockNumber"
+});
+```
+
+`@veil/sdk` is the target public package API. Until it is published, use this repository/testnet directly. We will not pretend an unpublished package already exists.
+
+## Help us break it
+
+We are building VEIL in public.
+
+1. Run the playground.
+2. Try to understand what information each hop can see.
+3. Try to break the assumptions in `docs/THREAT_MODEL.md`.
+4. Build something using the interfaces.
+5. Open an issue with anything confusing, broken, or privacy-sensitive.
+
+Good security reports are welcome. Never test against systems you do not own or have permission to test.
+
+## What VEIL does not claim
+
+Today VEIL does **not** claim production ring signatures, a production mixnet, global traffic-analysis resistance, perfect anonymity, or audited transaction privacy.
+
+We would rather publish a limitation than fake a guarantee.
+
+## Testnet milestones
+
+- [x] public playground
+- [x] deterministic privacy receipts
+- [x] safe read-only RPC demo
+- [x] build gate + smoke test
+- [ ] public `@veil/sdk`
+- [ ] `veil.read()`
+- [ ] `veil.write()`
+- [ ] `veil.prove()`
+- [ ] independent relay processes
+- [ ] encrypted hop envelopes
+- [ ] Sepolia end-to-end demo
+- [ ] external relay operators
+- [ ] external security review
+
+## Repository map
+
+```text
+app/       website + playground
+lib/       VEIL protocol logic
+agents/    privacy and release review rules
+docs/      threat model + protocol documentation
+scripts/   smoke tests
+```
+
+## Why Ethereum?
+
+Ethereum is the trust and settlement anchor. VEIL focuses on minimizing information that infrastructure does not need in order to carry a legitimate request.
+
+The long-term goal is simple:
+
+> **Ethereum should learn what consensus requires. Infrastructure should learn as little else as practical.**
 
 ## License
 
-MIT. Privacy infrastructure should be inspectable, forkable and independently runnable.
+MIT — inspect it, fork it, build on it, and help improve it.
